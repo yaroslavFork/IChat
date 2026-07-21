@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>IChat</title>
+
+<!-- PWA -->
+<meta name="theme-color" content="#1B1C1E" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="IChat" />
+<meta name="mobile-web-app-capable" content="yes" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="icon" href="icons/icon-192.png" />
+
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- Экран загрузки / splash -->
+<div id="splash-screen" class="splash-screen">
+  <div class="splash-logo">
+    <svg width="96" height="96" viewBox="236 239 550 550" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M600,636
+               C606,672 630,712 665,732
+               C678,740 689,744 695,740
+               C701,734 703,716 703,672
+               C703,652 700,636 691,624
+               C662,612 622,615 600,636
+               Z" fill="#FFFFFF"/>
+      <ellipse cx="512" cy="502" rx="245" ry="218" fill="#FFFFFF"/>
+      <g fill="#3FCE69">
+        <rect x="456" y="393" width="111" height="29" rx="7"/>
+        <rect x="456" y="586" width="111" height="29" rx="7"/>
+        <rect x="491" y="405" width="41" height="212"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<!-- Экран авторизации -->
+<div id="auth-screen" class="auth-screen hidden">
+  <div class="auth-card glass">
+    <div class="auth-logo">
+      <svg width="72" height="72" viewBox="236 239 550 550" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M600,636
+                 C606,672 630,712 665,732
+                 C678,740 689,744 695,740
+                 C701,734 703,716 703,672
+                 C703,652 700,636 691,624
+                 C662,612 622,615 600,636
+                 Z" fill="#FFFFFF"/>
+        <ellipse cx="512" cy="502" rx="245" ry="218" fill="#FFFFFF"/>
+        <g fill="#3FCE69">
+          <rect x="456" y="393" width="111" height="29" rx="7"/>
+          <rect x="456" y="586" width="111" height="29" rx="7"/>
+          <rect x="491" y="405" width="41" height="212"/>
+        </g>
+      </svg>
+    </div>
+    <h1 class="auth-title">IChat</h1>
+    <p class="auth-subtitle">Войдите в аккаунт Forkuslugi</p>
+
+    <form id="auth-form" class="auth-form">
+      <div class="field">
+        <input type="text" id="login-input" name="login" placeholder="Логин" autocomplete="username" required />
+      </div>
+      <div class="field field-password">
+        <input type="password" id="password-input" name="password" placeholder="Пароль" autocomplete="current-password" required />
+        <button type="button" id="toggle-password-btn" class="password-toggle-btn" aria-label="Показать пароль">
+          <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path class="eye-open" d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke="#98989D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle class="eye-open" cx="12" cy="12" r="3" stroke="#98989D" stroke-width="1.8"/>
+            <path class="eye-closed" d="M3 3l18 18M10.6 10.6a3 3 0 004.24 4.24M7.4 7.5C4.7 9 3 12 3 12s4 7 11 7c1.7 0 3.2-.4 4.5-1M16.8 16.9C19.3 15.3 21 12 21 12s-1.2-2.1-3.3-3.9" stroke="#98989D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <p id="auth-error" class="auth-error hidden"></p>
+      <button type="submit" class="btn-primary" id="auth-submit">
+        <span class="btn-label">Войти</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Основной экран приложения -->
+<div id="app-root" class="app-root hidden">
+
+  <!-- Экран: список чатов -->
+  <section id="screen-chats" class="screen screen-chats active">
+    <header class="top-bar">
+      <button id="open-profile" class="avatar-btn" aria-label="Профиль">
+        <img id="my-avatar" class="avatar" src="" alt="" />
+      </button>
+      <h1 class="top-title">Чаты</h1>
+      <button id="notifications-bell-btn" class="icon-btn" aria-label="Уведомления" style="position:relative;">
+        <span class="svg-icon svg-notifications" style="width:19px;height:19px;background-color:var(--accent);"></span>
+        <span id="notifications-unread-badge" class="notif-unread-badge hidden">0</span>
+      </button>
+      <button id="new-chat-btn" class="icon-btn" aria-label="Новый чат"></button>
+    </header>
+
+    <div class="search-wrap">
+      <div class="search-field glass">
+        <span class="svg-icon svg-search" style="width:18px;height:18px;background-color:#8E8E93;"></span>
+        <input type="text" id="search-input" placeholder="Поиск" />
+      </div>
+    </div>
+
+    <ul id="chat-list" class="chat-list"></ul>
+    <div id="chat-list-empty" class="empty-state hidden">
+      <p>Пока нет чатов</p>
+      <span>Нажмите «+», чтобы начать общение</span>
+    </div>
+  </section>
+
+  <!-- Экран: переписка -->
+  <section id="screen-chat" class="screen screen-chat">
+    <header class="chat-header">
+      <button id="chat-back-btn" class="icon-btn icon-back" aria-label="Назад"></button>
+      <div class="chat-header-info" id="chat-header-info">
+        <img id="chat-header-avatar" class="avatar avatar-sm" src="" alt="" />
+        <div class="chat-header-text">
+          <span id="chat-header-name" class="chat-header-name"></span>
+          <span id="chat-header-status" class="chat-header-status"></span>
+        </div>
+      </div>
+      <button id="chat-menu-btn" class="icon-btn" aria-label="Меню чата" title="Меню чата: информация о группе/канале"><span class="svg-icon svg-menu-dots" style="width:18px;height:18px;background-color:var(--accent);"></span></button>
+      <button id="call-video-btn" class="icon-btn" aria-label="Видеозвонок" title="Видеозвонок"><span class="svg-icon svg-video-call"></span></button>
+      <button id="call-voice-btn" class="icon-btn" aria-label="Звонок" title="Аудиозвонок"><span class="svg-icon svg-call"></span></button>
+    </header>
+
+    <div id="messages-scroll" class="messages-scroll">
+      <ul id="messages-list" class="messages-list"></ul>
+    </div>
+
+    <div id="reply-preview" class="reply-preview hidden">
+      <div class="reply-preview-bar"></div>
+      <div class="reply-preview-body">
+        <span id="reply-preview-name" class="reply-preview-name"></span>
+        <span id="reply-preview-text" class="reply-preview-text"></span>
+      </div>
+      <button id="reply-preview-close" class="icon-btn icon-close-sm" aria-label="Отменить ответ"></button>
+    </div>
+
+    <div id="typing-indicator" class="typing-indicator hidden">
+      <span class="typing-dots"><i></i><i></i><i></i></span>
+      <span id="typing-indicator-text"></span>
+    </div>
+
+    <div id="readonly-banner" class="readonly-banner hidden">Публиковать могут только администраторы канала</div>
+
+    <footer id="composer" class="composer">
+      <button id="attach-btn" class="icon-btn icon-attach" aria-label="Прикрепить"><span class="svg-icon svg-upload" style="width:18px;height:18px;"></span></button>
+      <div class="composer-field glass">
+        <textarea id="message-input" rows="1" placeholder="Сообщение"></textarea>
+      </div>
+      <button id="voice-btn" class="icon-btn icon-mic" aria-label="Голосовое сообщение"><span class="svg-icon svg-mic" style="width:18px;height:18px;"></span></button>
+      <button id="send-btn" class="icon-btn icon-send hidden" aria-label="Отправить"></button>
+    </footer>
+
+    <input type="file" id="file-input" class="hidden" accept="image/*,video/*,.pdf,.doc,.docx,.zip,.rar,.txt" />
+  </section>
+
+  <!-- Модалка: новый чат -->
+  <div id="new-chat-modal" class="modal-overlay hidden">
+    <div class="modal-sheet glass">
+      <div class="modal-handle"></div>
+      <h2 class="modal-title">Новый чат</h2>
+
+      <div class="search-field glass modal-search">
+        <span class="svg-icon svg-search" style="width:18px;height:18px;background-color:#8E8E93;"></span>
+        <input type="text" id="new-chat-search" placeholder="Логин или имя пользователя" />
+      </div>
+
+      <button id="new-group-btn" class="modal-action-row">
+        <span class="modal-action-icon modal-action-icon-group"></span>
+        <span>Создать группу</span>
+      </button>
+
+      <ul id="new-chat-user-list" class="user-list"></ul>
+      <p id="new-chat-empty" class="modal-empty hidden">Пользователи не найдены</p>
+
+      <label class="profile-label" id="open-channels-label" style="display:block; margin-top:14px;">Открытые группы и каналы</label>
+      <ul id="open-channels-list" class="user-list"></ul>
+      <p id="open-channels-empty" class="modal-empty hidden">Ничего не найдено</p>
+
+      <button id="new-chat-close" class="modal-close-btn" aria-label="Закрыть"></button>
+    </div>
+  </div>
+
+  <!-- Экран: профиль (свой и чужой) -->
+  <section id="screen-profile" class="screen screen-profile">
+    <header class="chat-header">
+      <button id="profile-back-btn" class="icon-btn icon-back" aria-label="Назад"></button>
+      <div class="chat-header-info"><span class="top-title" style="font-size:17px;">Профиль</span></div>
+      <button id="profile-edit-btn" class="text-btn hidden">Изменить</button>
+    </header>
+
+    <div class="profile-scroll">
+      <div class="profile-hero">
+        <div class="profile-avatar-wrap">
+          <img id="profile-avatar" class="profile-avatar" src="" alt="" />
+          <input type="file" id="profile-avatar-input" class="hidden" accept="image/*" />
+        </div>
+        <div class="profile-name-row">
+          <h1 id="profile-name" class="profile-name"></h1>
+          <img id="profile-badge" class="profile-badge hidden" src="" alt="Галочка" />
+          <button id="profile-badge-info-btn" class="badge-info-btn hidden" type="button" aria-label="Что означает галочка"><span class="svg-icon svg-question" style="width:14px;height:14px;"></span></button>
+        </div>
+        <span id="profile-login" class="profile-login"></span>
+        <span id="profile-online-status" class="profile-online-status"></span>
+      </div>
+
+      <div class="profile-section">
+        <label class="profile-label">О себе</label>
+        <p id="profile-bio-view" class="profile-value"></p>
+        <textarea id="profile-bio-edit" class="profile-input hidden" rows="3" placeholder="Расскажите о себе"></textarea>
+      </div>
+
+      <div class="profile-section">
+        <label class="profile-label">Имя</label>
+        <p id="profile-name-view" class="profile-value"></p>
+        <input type="text" id="profile-name-edit" class="profile-input hidden" placeholder="Имя" />
+      </div>
+
+      <div class="profile-section">
+        <label class="profile-label">ID</label>
+        <p id="profile-id-view" class="profile-value profile-value-mono"></p>
+      </div>
+
+      <div class="profile-section">
+        <label class="profile-label">Дата регистрации</label>
+        <p id="profile-created-view" class="profile-value"></p>
+      </div>
+
+      <button id="profile-save-btn" class="btn-primary profile-save-btn hidden">Сохранить</button>
+      <button id="profile-notifications-btn" class="profile-admin-btn"><span class="svg-icon svg-notifications" style="width:17px;height:17px;vertical-align:-3px;margin-right:6px;"></span>Включить уведомления</button>
+      <button id="profile-admin-btn" class="profile-admin-btn hidden"><span class="svg-icon svg-admin" style="width:17px;height:17px;vertical-align:-3px;margin-right:6px;"></span>Админ-панель</button>
+      <button id="profile-logout-btn" class="profile-logout-btn hidden">Выйти из аккаунта</button>
+    </div>
+  </section>
+
+  <!-- Экран: админ-панель -->
+  <section id="screen-admin" class="screen screen-admin">
+    <header class="chat-header">
+      <button id="admin-back-btn" class="icon-btn icon-back" aria-label="Назад"></button>
+      <div class="chat-header-info"><span class="top-title" style="font-size:17px;">Админ-панель</span></div>
+      <span style="width:34px"></span>
+    </header>
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="users">Пользователи</button>
+      <button class="admin-tab" data-tab="stats">Статистика</button>
+      <button class="admin-tab" data-tab="announcements">Объявления</button>
+      <button class="admin-tab" data-tab="groups">Группы и каналы</button>
+      <button class="admin-tab" data-tab="allchats">Все переписки</button>
+      <button class="admin-tab" data-tab="modlog">Журнал</button>
+      <button class="admin-tab" data-tab="reports">Жалобы</button>
+      <button class="admin-tab" data-tab="broadcast">Рассылка</button>
+      <button class="admin-tab" data-tab="callsmgmt">Звонки</button>
+    </div>
+
+    <div class="admin-content">
+      <!-- Вкладка: пользователи -->
+      <div id="admin-tab-users" class="admin-tab-panel active">
+        <button id="badge-legend-toggle" type="button" class="badge-legend-toggle">
+          <span>📘 Памятка по галочкам</span>
+          <span id="badge-legend-arrow" class="badge-legend-arrow">▾</span>
+        </button>
+        <ul id="badge-legend-list" class="badge-legend-list hidden"></ul>
+
+        <div class="search-field glass modal-search">
+          <span class="svg-icon svg-search" style="width:18px;height:18px;background-color:#8E8E93;"></span>
+          <input type="text" id="admin-user-search" placeholder="Поиск по логину или имени" />
+        </div>
+        <ul id="admin-user-list" class="admin-user-list"></ul>
+      </div>
+
+      <!-- Вкладка: статистика -->
+      <div id="admin-tab-stats" class="admin-tab-panel">
+        <div class="stat-grid">
+          <div class="stat-card glass">
+            <span id="stat-total-users" class="stat-value">—</span>
+            <span class="stat-label">Пользователей</span>
+          </div>
+          <div class="stat-card glass">
+            <span id="stat-online-users" class="stat-value">—</span>
+            <span class="stat-label">Онлайн сейчас</span>
+          </div>
+          <div class="stat-card glass">
+            <span id="stat-total-chats" class="stat-value">—</span>
+            <span class="stat-label">Чатов</span>
+          </div>
+          <div class="stat-card glass">
+            <span id="stat-total-messages" class="stat-value">—</span>
+            <span class="stat-label">Сообщений</span>
+          </div>
+          <div class="stat-card glass">
+            <span id="stat-blocked-users" class="stat-value">—</span>
+            <span class="stat-label">Заблокировано</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Вкладка: объявления -->
+      <div id="admin-tab-announcements" class="admin-tab-panel">
+        <textarea id="announcement-input" class="profile-input" rows="4" placeholder="Текст объявления для всех пользователей"></textarea>
+        <button id="announcement-send-btn" class="btn-primary" style="margin-top:10px;">Опубликовать объявление</button>
+        <ul id="announcement-list" class="admin-user-list" style="margin-top:18px;"></ul>
+      </div>
+
+      <!-- Вкладка: группы и каналы -->
+      <div id="admin-tab-groups" class="admin-tab-panel">
+        <label class="profile-label">Создать канал (только администратор)</label>
+        <input type="text" id="new-channel-name" class="profile-input" placeholder="Название канала" style="margin-bottom:8px;" />
+        <div class="segment-control" style="margin-bottom:10px;">
+          <button type="button" class="segment-btn active" data-open="true">Открытый</button>
+          <button type="button" class="segment-btn" data-open="false">Закрытый</button>
+        </div>
+        <button id="new-channel-create-btn" class="btn-primary">Создать канал</button>
+
+        <label class="profile-label" style="margin-top:22px; display:block;">Все группы и каналы</label>
+        <ul id="admin-groups-list" class="admin-user-list"></ul>
+      </div>
+
+      <!-- Вкладка: все переписки (просмотр админом) -->
+      <div id="admin-tab-allchats" class="admin-tab-panel">
+        <div class="search-field glass modal-search">
+          <span class="svg-icon svg-search" style="width:18px;height:18px;background-color:#8E8E93;"></span>
+          <input type="text" id="admin-chats-search" placeholder="Поиск по названию или логину" />
+        </div>
+        <ul id="admin-chats-list" class="admin-user-list"></ul>
+      </div>
+
+      <!-- Вкладка: журнал действий администраторов -->
+      <div id="admin-tab-modlog" class="admin-tab-panel">
+        <div class="search-field glass modal-search">
+          <span class="svg-icon svg-search" style="width:18px;height:18px;background-color:#8E8E93;"></span>
+          <input type="text" id="modlog-search" placeholder="Поиск по действию или пользователю" />
+        </div>
+        <ul id="modlog-list" class="admin-user-list"></ul>
+      </div>
+
+      <!-- Вкладка: жалобы -->
+      <div id="admin-tab-reports" class="admin-tab-panel">
+        <ul id="reports-list" class="admin-user-list"></ul>
+        <p id="reports-empty" class="modal-empty hidden">Жалоб пока нет</p>
+      </div>
+
+      <!-- Вкладка: массовые уведомления -->
+      <div id="admin-tab-broadcast" class="admin-tab-panel">
+        <label class="profile-label" style="display:block;">Кому отправить</label>
+        <select id="broadcast-target-select" class="profile-input" style="margin-bottom:10px;">
+          <option value="all">Всем пользователям</option>
+          <option value="admins">Администраторам</option>
+          <option value="badge:blue">С галочкой: Подтверждённый</option>
+          <option value="badge:gold">С галочкой: Популярный</option>
+          <option value="badge:purple">С галочкой: Разработчик</option>
+          <option value="badge:green">С галочкой: Компания/организация</option>
+          <option value="user">Конкретному пользователю</option>
+        </select>
+        <input type="text" id="broadcast-user-input" class="profile-input hidden" placeholder="Логин пользователя" style="margin-bottom:10px;" />
+        <input type="text" id="broadcast-title-input" class="profile-input" placeholder="Заголовок" style="margin-bottom:10px;" />
+        <textarea id="broadcast-text-input" class="profile-input" rows="3" placeholder="Текст уведомления"></textarea>
+        <input type="text" id="broadcast-link-input" class="profile-input" placeholder="Ссылка (необязательно)" style="margin:10px 0;" />
+        <div id="broadcast-preview" class="broadcast-preview glass"></div>
+        <button id="broadcast-send-btn" class="btn-primary" style="margin-top:12px;">Опубликовать объявление</button>
+      </div>
+
+      <!-- Вкладка: управление звонками -->
+      <div id="admin-tab-callsmgmt" class="admin-tab-panel">
+        <p class="modal-empty" style="padding:4px 0 14px;">Только техническая информация — содержимое разговоров администратору недоступно.</p>
+        <button id="callsmgmt-refresh-btn" class="admin-block-btn" style="margin-bottom:8px;">Обновить список</button>
+        <button id="callsmgmt-endall-btn" class="admin-block-btn is-blocked" style="margin-bottom:12px;">Завершить все звонки</button>
+        <ul id="callsmgmt-list" class="admin-user-list"></ul>
+        <p id="callsmgmt-empty" class="modal-empty hidden">Активных звонков нет</p>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- Action sheet: действия с сообщением (ответить/переслать/копировать/редактировать/удалить) -->
+  <div id="message-actions-sheet" class="modal-overlay hidden">
+    <div class="modal-sheet glass action-sheet">
+      <div class="modal-handle"></div>
+      <div id="message-actions-preview" class="action-sheet-preview"></div>
+      <button class="action-row" data-action="reply">Ответить</button>
+      <button class="action-row" data-action="forward">Переслать</button>
+      <button class="action-row" data-action="copy">Копировать</button>
+      <button class="action-row" data-action="edit">Редактировать</button>
+      <button class="action-row" data-action="report"><span class="svg-icon svg-report action-row-icon"></span>Пожаловаться</button>
+      <button class="action-row action-row-danger" data-action="delete"><span class="svg-icon svg-delete action-row-icon"></span>Удалить</button>
+      <button class="action-row action-row-cancel" data-action="cancel">Отмена</button>
+    </div>
+  </div>
+
+  <!-- Мини-модалка: выбор чата для пересылки -->
+  <!-- Модалка: что означает галочка -->
+  <div id="badge-info-modal" class="modal-overlay hidden">
+    <div class="modal-sheet glass badge-info-sheet">
+      <div class="modal-handle"></div>
+      <img id="badge-info-dot" class="badge-info-dot" src="" alt="" />
+      <h2 id="badge-info-title" class="modal-title"></h2>
+      <p class="badge-info-row"><b>Что означает:</b> <span id="badge-info-desc"></span></p>
+      <p class="badge-info-row"><b>Кто может получить:</b> <span id="badge-info-eligibility"></span></p>
+      <button id="badge-info-close" class="modal-close-btn" aria-label="Закрыть"></button>
+    </div>
+  </div>
+
+  <!-- Модалка: блокировка пользователя со сроком -->
+  <div id="block-modal" class="modal-overlay hidden">
+    <div class="modal-sheet glass">
+      <div class="modal-handle"></div>
+      <h2 class="modal-title">Заблокировать пользователя</h2>
+
+      <label class="profile-label" style="display:block;">Срок</label>
+      <select id="block-duration-select" class="profile-input" style="margin-bottom:10px;">
+        <option value="1h">1 час</option>
+        <option value="12h">12 часов</option>
+        <option value="1d">1 день</option>
+        <option value="7d">7 дней</option>
+        <option value="30d">30 дней</option>
+        <option value="forever">Навсегда</option>
+      </select>
+
+      <label class="profile-label" style="display:block;">Причина (видит пользователь)</label>
+      <input type="text" id="block-reason-input" class="profile-input" placeholder="Например: нарушение правил чата" style="margin-bottom:10px;" />
+
+      <label class="profile-label" style="display:block;">Комментарий администратора (только для журнала)</label>
+      <textarea id="block-comment-input" class="profile-input" rows="2" placeholder="Необязательно"></textarea>
+
+      <button id="block-confirm-btn" class="btn-primary" style="margin-top:14px;">Заблокировать</button>
+      <button id="block-close" class="modal-close-btn" aria-label="Закрыть"></button>
+    </div>
+  </div>
+
+  <div id="forward-modal" class="modal-overlay hidden">
+    <div class="modal-sheet glass">
+      <div class="modal-handle"></div>
+      <h2 class="modal-title">Переслать в чат</h2>
+      <ul id="forward-chat-list" class="user-list"></ul>
+      <p id="forward-empty" class="modal-empty hidden">Нет доступных чатов</p>
+      <button id="forward-close" class="modal-close-btn" aria-label="Закрыть"></button>
+    </div>
+  </div>
+
+  <!-- Модалка: уведомления пользователя -->
+  <div id="notifications-modal" class="modal-overlay hidden">
+    <div class="modal-sheet glass">
+      <div class="modal-handle"></div>
+      <h2 class="modal-title">Уведомления</h2>
+      <ul id="notifications-list" class="admin-user-list"></ul>
+      <p id="notifications-empty" class="modal-empty hidden">Пока нет уведомлений</p>
+      <button id="notifications-close" class="modal-close-btn" aria-label="Закрыть"></button>
+    </div>
+  </div>
+
+  <!-- Модалка: администратор добавляет участника в группу/канал вручную -->
+  <div id="add-member-modal" class="modal-overlay hidden">
+    <div class="modal-sheet glass">
+      <div class="modal-handle"></div>
+      <h2 id="add-member-title" class="modal-title">Добавить участника</h2>
+
+      <div class="search-field glass modal-search">
+        <span class="svg-icon svg-search" style="width:18px;height:18px;background-color:#8E8E93;"></span>
+        <input type="text" id="add-member-search" placeholder="Логин или имя пользователя" />
+      </div>
+
+      <ul id="add-member-user-list" class="user-list"></ul>
+      <p id="add-member-empty" class="modal-empty hidden">Пользователи не найдены</p>
+
+      <button id="add-member-close" class="modal-close-btn" aria-label="Закрыть"></button>
+    </div>
+  </div>
+
+  <!-- Модалка: создание группы -->
+  <div id="new-group-modal" class="modal-overlay hidden">
+    <div class="modal-sheet glass">
+      <div class="modal-handle"></div>
+      <h2 class="modal-title">Новая группа</h2>
+
+      <input type="text" id="new-group-name" class="profile-input" placeholder="Название группы" style="margin-bottom:10px;" />
+
+      <div class="search-field glass modal-search">
+        <span class="svg-icon svg-search" style="width:18px;height:18px;background-color:#8E8E93;"></span>
+        <input type="text" id="new-group-search" placeholder="Добавить участников" />
+      </div>
+
+      <ul id="new-group-user-list" class="user-list"></ul>
+      <span id="new-group-selected-count" class="modal-empty">Участники не выбраны</span>
+
+      <button id="new-group-create-btn" class="btn-primary" style="margin-top:10px;">Создать группу</button>
+      <button id="new-group-close" class="modal-close-btn" aria-label="Закрыть"></button>
+    </div>
+  </div>
+
+  <!-- Экран: звонок (входящий/исходящий/активный) -->
+  <div id="call-overlay" class="call-overlay hidden">
+    <div class="call-bg"></div>
+
+    <video id="call-remote-video" class="call-remote-video hidden" autoplay playsinline></video>
+    <div id="call-remote-avatar-overlay" class="call-remote-avatar-overlay hidden">
+      <img id="call-remote-avatar-img" class="call-remote-avatar-img" src="" alt="" />
+    </div>
+    <div id="call-remote-state-badges" class="call-remote-state-badges"></div>
+
+    <div class="call-info">
+      <img id="call-avatar" class="call-avatar" src="" alt="" />
+      <h2 id="call-name" class="call-name"></h2>
+      <p id="call-status-text" class="call-status-text">Вызов…</p>
+    </div>
+
+    <video id="call-local-video" class="call-local-video hidden" autoplay playsinline muted></video>
+
+    <div id="call-incoming-actions" class="call-incoming-actions hidden">
+      <button id="call-decline-btn" class="call-control-btn call-hangup" aria-label="Отклонить"><span class="svg-icon svg-call-end" style="background-color:#fff;"></span></button>
+      <button id="call-accept-btn" class="call-control-btn call-accept" aria-label="Принять"><span class="svg-icon svg-call" style="background-color:#fff;"></span></button>
+    </div>
+
+    <div id="call-active-controls" class="call-controls hidden">
+      <button id="call-mute-btn" class="call-control-btn" aria-label="Микрофон"><span class="svg-icon svg-mic" style="background-color:#fff;"></span></button>
+      <button id="call-cam-btn" class="call-control-btn hidden" aria-label="Камера"><span class="svg-icon svg-camera" style="background-color:#fff;"></span></button>
+      <button id="call-hangup-btn" class="call-control-btn call-hangup" aria-label="Завершить"><span class="svg-icon svg-call-end" style="background-color:#fff;"></span></button>
+    </div>
+  </div>
+
+  <!-- Экран: информация о группе/канале -->
+  <section id="screen-group-info" class="screen screen-group-info">
+    <header class="chat-header">
+      <button id="group-info-back-btn" class="icon-btn icon-back" aria-label="Назад"></button>
+      <div class="chat-header-info"><span class="top-title" style="font-size:17px;">Информация</span></div>
+      <span style="width:34px"></span>
+    </header>
+    <div class="profile-scroll">
+      <div class="profile-hero">
+        <img id="group-info-avatar" class="profile-avatar" src="" alt="" />
+        <div class="profile-name-row">
+          <h1 id="group-info-name" class="profile-name"></h1>
+        </div>
+        <span id="group-info-type" class="profile-login"></span>
+      </div>
+
+      <div class="profile-section">
+        <label class="profile-label">Участники</label>
+        <ul id="group-info-members" class="admin-user-list"></ul>
+      </div>
+
+      <button id="group-info-leave-btn" class="profile-logout-btn">Покинуть группу</button>
+    </div>
+  </section>
+
+</div>
+
+<script type="module" src="js/app.js"></script>
+
+<!--
+  Сторожевой скрипт (обычный <script>, НЕ type="module").
+  Зачем он нужен: весь остальной код приложения — ES-модули, а
+  js/supabase-client.js статически импортирует Supabase SDK с внешнего
+  CDN (esm.sh). Если этот импорт не проходит по любой причине —
+  нестабильный мобильный интернет, блокировка сети/провайдером,
+  расширение-блокировщик, временная недоступность CDN — вся цепочка
+  ES-модулей молча не выполняется НАЧИНАЯ С ЭТОГО МОМЕНТА, включая
+  сам bootstrap() в app.js. При этом splash-экран всё равно исчезает
+  сам по себе (его анимация — чистый CSS, не зависит от JS), и человек
+  остаётся перед голым тёмным фоном без единого объяснения, что
+  произошло — то самое "просто серый экран".
+  Этот скрипт обычный, не модуль, поэтому выполняется независимо от
+  успеха ES-модулей и внешних CDN. Он просто проверяет: если через
+  6 секунд после загрузки страницы ни экран входа, ни главный экран
+  так и не показались — значит, основной код не смог запуститься —
+  и показывает понятное сообщение с кнопкой "Обновить страницу"
+  вместо тишины.
+-->
+<script>
+  setTimeout(function () {
+    var authScreen = document.getElementById("auth-screen");
+    var appRoot = document.getElementById("app-root");
+    var authVisible = authScreen && !authScreen.classList.contains("hidden");
+    var appVisible = appRoot && !appRoot.classList.contains("hidden");
+
+    if (authVisible || appVisible) return; // всё нормально загрузилось
+
+    document.body.innerHTML =
+      '<div style="position:fixed;inset:0;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;gap:16px;padding:32px;' +
+      'background:#1B1C1E;color:#fff;font-family:-apple-system,BlinkMacSystemFont,' +
+      '\'Segoe UI\',Roboto,sans-serif;text-align:center;">' +
+      '<div style="font-size:22px;font-weight:700;">Не удалось загрузить IChat</div>' +
+      '<div style="font-size:15px;color:#A9ACB0;max-width:320px;line-height:1.5;">' +
+      'Похоже, не загрузился один из внешних компонентов приложения — ' +
+      'проверьте интернет-соединение и обновите страницу. Если это ' +
+      'повторяется — сообщите администратору.</div>' +
+      '<button onclick="location.reload()" style="margin-top:8px;padding:13px 28px;' +
+      'border:none;border-radius:14px;background:linear-gradient(135deg,#E4E8EA,#6E7278);' +
+      'color:#1C1C1E;font-size:16px;font-weight:600;">Обновить страницу</button>' +
+      "</div>";
+  }, 6000);
+</script>
+</body>
+</html>

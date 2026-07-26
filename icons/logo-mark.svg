@@ -1,0 +1,26 @@
+<svg width="1024" height="1024" viewBox="236 239 550 550" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="bubbleShadowMark" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Пузырь сообщения с хвостиком, без металлической подложки — для использования внутри приложения -->
+  <g filter="url(#bubbleShadowMark)">
+    <path d="M600,636
+             C606,672 630,712 665,732
+             C678,740 689,744 695,740
+             C701,734 703,716 703,672
+             C703,652 700,636 691,624
+             C662,612 622,615 600,636
+             Z" fill="#FFFFFF"/>
+    <ellipse cx="512" cy="502" rx="245" ry="218" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Буква "I" засечковая, зелёная -->
+  <g fill="#3FCE69">
+    <rect x="456" y="393" width="111" height="29" rx="7"/>
+    <rect x="456" y="586" width="111" height="29" rx="7"/>
+    <rect x="491" y="405" width="41" height="212"/>
+  </g>
+</svg>
